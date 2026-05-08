@@ -31,7 +31,7 @@ services:
       SPRING_DATASOURCE_PASSWORD: postgres
       APP_SEED_ENABLED: "true"
     ports:
-      - "8080:8080"
+      - "8081:8080"
     restart: unless-stopped
 
   frontend:
