@@ -53,6 +53,7 @@ export default function Dashboard() {
   const regenerate = async () => {
     setLoading(true)
     setError('')
+    setLoggedIds(new Set())
     try {
       const data = await recommendationsApi.generate({
         forceRegenerate: true,
@@ -223,10 +224,15 @@ export default function Dashboard() {
         <AttemptModal
           problem={modalProblem}
           onClose={() => setModalProblem(null)}
-          onSaved={() => {
-            setLoggedIds(prev => new Set([...prev, modalProblem!.id]))
-            setModalProblem(null)
-            setRefreshKey(k => k + 1)
+          onSaved={(status) => {
+            const id = modalProblem!.id
+            setLoggedIds(prev => new Set([...prev, id]))
+            setRec(prev => prev ? {
+              ...prev,
+              problems: prev.problems.map(p =>
+                p.id === id ? { ...p, latestStatus: status } : p
+              ),
+            } : null)
           }}
         />
       )}

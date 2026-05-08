@@ -160,7 +160,7 @@ export default function ProblemBrowser() {
         <AttemptModal
           problem={modalProblem}
           onClose={() => setModalProblem(null)}
-          onSaved={() => setRefreshKey(k => k + 1)}
+          onSaved={_status => setRefreshKey(k => k + 1)}
         />
       )}
     </div>

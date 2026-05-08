@@ -5,7 +5,7 @@ import type { AttemptStatus, RecommendedProblem } from '../types'
 interface Props {
   problem: RecommendedProblem | { id: number; title: string; difficulty: string }
   onClose: () => void
-  onSaved: () => void
+  onSaved: (status: AttemptStatus) => void
 }
 
 export default function AttemptModal({ problem, onClose, onSaved }: Props) {
@@ -26,7 +26,7 @@ export default function AttemptModal({ problem, onClose, onSaved }: Props) {
         timeTakenMinutes: timeTaken ? parseInt(timeTaken, 10) : undefined,
         notes: notes || undefined,
       })
-      onSaved()
+      onSaved(status)
       onClose()
     } catch {
       setError('Failed to save attempt. Please try again.')
