@@ -131,8 +131,8 @@ export default function StatsPage() {
             const date = el.getAttribute('data-date')
             if (!date) return
             setTooltip({
-              x: (e as MouseEvent).clientX,
-              y: (e as MouseEvent).clientY,
+              x: e.clientX,
+              y: e.clientY,
               date,
               count:  Number(el.getAttribute('data-count')),
               easy:   Number(el.getAttribute('data-easy')),
@@ -141,7 +141,7 @@ export default function StatsPage() {
             })
           }}
           onMouseMove={e => {
-            if (tooltip) setTooltip(t => t ? { ...t, x: (e as unknown as MouseEvent).clientX, y: (e as unknown as MouseEvent).clientY } : null)
+            if (tooltip) setTooltip(t => t ? { ...t, x: e.clientX, y: e.clientY } : null)
           }}
           onMouseOut={e => {
             if ((e.target as Element).getAttribute('data-date')) setTooltip(null)
@@ -153,16 +153,13 @@ export default function StatsPage() {
             values={heatmapValues}
             classForValue={getColor}
             showWeekdayLabels
-            tooltipDataAttrs={(value: any) => {
-              if (!value?.date) return {}
-              return {
-                'data-date':   value.date,
-                'data-count':  value.count ?? 0,
-                'data-easy':   value.easy ?? 0,
-                'data-medium': value.medium ?? 0,
-                'data-hard':   value.hard ?? 0,
-              }
-            }}
+            tooltipDataAttrs={(value: any) => ({
+              'data-date':   value?.date ?? '',
+              'data-count':  value?.count ?? 0,
+              'data-easy':   value?.easy ?? 0,
+              'data-medium': value?.medium ?? 0,
+              'data-hard':   value?.hard ?? 0,
+            } as any)}
           />
         </div>
         <div className="flex-center gap-8 mt-8" style={{ marginTop: 8, fontSize: 11, color: 'var(--text-muted)' }}>
