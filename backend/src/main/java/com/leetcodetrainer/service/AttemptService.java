@@ -57,6 +57,9 @@ public class AttemptService {
             Map<String, Object> entry = new java.util.HashMap<>();
             entry.put("date", row[0].toString());
             entry.put("count", ((Number) row[1]).intValue());
+            entry.put("easy",  ((Number) row[2]).intValue());
+            entry.put("medium", ((Number) row[3]).intValue());
+            entry.put("hard",  ((Number) row[4]).intValue());
             return entry;
         }).collect(Collectors.toList());
     }

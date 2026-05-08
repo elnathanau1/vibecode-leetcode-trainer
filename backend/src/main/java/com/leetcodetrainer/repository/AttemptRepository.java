@@ -43,10 +43,15 @@ public interface AttemptRepository extends JpaRepository<Attempt, Long> {
     List<Attempt> findBetween(@Param("from") LocalDateTime from, @Param("to") LocalDateTime to);
 
     @Query(value = """
-        SELECT DATE(solved_at) as date, COUNT(*) as count
-        FROM attempts
-        WHERE solved_at >= :from
-        GROUP BY DATE(solved_at)
+        SELECT DATE(a.solved_at) as date,
+               COUNT(*) as count,
+               SUM(CASE WHEN p.difficulty = 'EASY' THEN 1 ELSE 0 END) as easy,
+               SUM(CASE WHEN p.difficulty = 'MEDIUM' THEN 1 ELSE 0 END) as medium,
+               SUM(CASE WHEN p.difficulty = 'HARD' THEN 1 ELSE 0 END) as hard
+        FROM attempts a
+        JOIN problems p ON a.problem_id = p.id
+        WHERE a.solved_at >= :from
+        GROUP BY DATE(a.solved_at)
         ORDER BY date
         """, nativeQuery = true)
     List<Object[]> findDailyCountsSince(@Param("from") LocalDateTime from);

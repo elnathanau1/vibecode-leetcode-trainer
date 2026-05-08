@@ -47,6 +47,9 @@ export interface DailyRecommendation {
 export interface HeatmapEntry {
   date: string;
   count: number;
+  easy: number;
+  medium: number;
+  hard: number;
 }
 
 export interface CategoryProgress {
