@@ -147,7 +147,6 @@ public class RecommendationService {
                 .filter(p -> matchesFilters(p, null, patterns, company))
                 .collect(Collectors.toList());
 
-        // Shuffle for variety, but keep difficulty grouping
         List<Problem> easy = filtered.stream().filter(p -> "EASY".equals(p.getDifficulty())).collect(Collectors.toList());
         List<Problem> medium = filtered.stream().filter(p -> "MEDIUM".equals(p.getDifficulty())).collect(Collectors.toList());
         List<Problem> hard = filtered.stream().filter(p -> "HARD".equals(p.getDifficulty())).collect(Collectors.toList());
@@ -155,10 +154,18 @@ public class RecommendationService {
         Collections.shuffle(medium);
         Collections.shuffle(hard);
 
+        // Warmup: up to 2 easy, then interleave medium+hard (2:1 ratio), then remaining easy as fallback
         List<Problem> result = new ArrayList<>();
-        result.addAll(easy);
-        result.addAll(medium);
-        result.addAll(hard);
+        result.addAll(easy.subList(0, Math.min(2, easy.size())));
+
+        int mi = 0, hi = 0;
+        while (mi < medium.size() || hi < hard.size()) {
+            if (mi < medium.size()) result.add(medium.get(mi++));
+            if (mi < medium.size()) result.add(medium.get(mi++));
+            if (hi < hard.size()) result.add(hard.get(hi++));
+        }
+
+        if (easy.size() > 2) result.addAll(easy.subList(2, easy.size()));
         return result;
     }
 
