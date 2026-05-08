@@ -75,7 +75,7 @@ export default function StatsPage() {
           boxShadow: '0 4px 16px rgba(0,0,0,0.4)',
         }}>
           <div style={{ fontWeight: 700, marginBottom: 6 }}>
-            {format(parseISO(tooltip.date), 'MMM d, yyyy')}
+            {format(parseISO(tooltip.date), 'EEEE, MMM d, yyyy')}
           </div>
           {tooltip.count === 0 ? (
             <div style={{ color: 'var(--text-muted)' }}>No submissions</div>
@@ -152,7 +152,7 @@ export default function StatsPage() {
             endDate={today}
             values={heatmapValues}
             classForValue={getColor}
-            showWeekdayLabels
+            showWeekdayLabels={false}
             tooltipDataAttrs={(value: any) => ({
               'data-date':   value?.date ?? '',
               'data-count':  value?.count ?? 0,
