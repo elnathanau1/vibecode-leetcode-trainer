@@ -29,6 +29,7 @@ export default function Dashboard() {
   const [showFilters, setShowFilters] = useState(false)
   const [modalProblem, setModalProblem] = useState<RecommendedProblem | null>(null)
   const [refreshKey, setRefreshKey] = useState(0)
+  const [loggedIds, setLoggedIds] = useState<Set<number>>(new Set())
 
   useEffect(() => {
     problemsApi.getPatterns().then(setAvailablePatterns).catch(() => {})
@@ -203,6 +204,7 @@ export default function Dashboard() {
                 key={p.id}
                 problem={p}
                 index={i + 1}
+                justLogged={loggedIds.has(p.id)}
                 onLog={() => setModalProblem(p)}
               />
             ))}
@@ -221,7 +223,11 @@ export default function Dashboard() {
         <AttemptModal
           problem={modalProblem}
           onClose={() => setModalProblem(null)}
-          onSaved={() => setRefreshKey(k => k + 1)}
+          onSaved={() => {
+            setLoggedIds(prev => new Set([...prev, modalProblem!.id]))
+            setModalProblem(null)
+            setRefreshKey(k => k + 1)
+          }}
         />
       )}
     </div>
@@ -229,8 +235,8 @@ export default function Dashboard() {
 }
 
 function ProblemCard({
-  problem, index, onLog,
-}: { problem: RecommendedProblem; index: number; onLog: () => void }) {
+  problem, index, justLogged, onLog,
+}: { problem: RecommendedProblem; index: number; justLogged: boolean; onLog: () => void }) {
   const statusClass = problem.latestStatus?.toLowerCase() ?? ''
   return (
     <div className={`problem-card ${statusClass}`}>
@@ -243,6 +249,9 @@ function ProblemCard({
             ) : problem.title}
           </span>
           <DifficultyBadge difficulty={problem.difficulty} />
+          {justLogged && (
+            <span className="badge-logged-indicator">✓ Logged</span>
+          )}
         </div>
         <div className="flex-center gap-8">
           {problem.category && CATEGORY_LABELS[problem.category] && (
@@ -263,7 +272,7 @@ function ProblemCard({
           {problem.patterns.slice(0, 4).map(p => <span key={p} className="tag">{p}</span>)}
         </div>
         <button className="btn-secondary btn-sm" onClick={onLog}>
-          Log Attempt
+          {justLogged ? 'Re-log' : 'Log Attempt'}
         </button>
       </div>
     </div>

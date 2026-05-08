@@ -85,6 +85,25 @@ input:focus, select:focus, textarea:focus { border-color: var(--accent); }
 .badge-new { background: rgba(88,166,255,0.15); color: var(--accent); }
 .badge-spaced { background: rgba(188,140,255,0.15); color: var(--purple); }
 
+.badge-logged-indicator {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 700;
+  background: rgba(63,185,80,0.18);
+  color: var(--green);
+  border: 1px solid rgba(63,185,80,0.4);
+  animation: badge-pop 0.25s cubic-bezier(0.34,1.56,0.64,1);
+}
+
+@keyframes badge-pop {
+  from { opacity: 0; transform: scale(0.6); }
+  to   { opacity: 1; transform: scale(1); }
+}
+
 .tag {
   display: inline-block;
   background: var(--surface2);
