@@ -225,6 +225,8 @@ public class RecommendationService {
             attemptRepository.findLatestByProblemId(p.getId())
                     .ifPresent(a -> pd.setLatestStatus(a.getStatus()));
 
+            pd.setLoggedToday(attemptRepository.existsByProblemIdAndSolvedDate(p.getId(), java.time.LocalDate.now()));
+
             problemDTOs.add(pd);
         }
 

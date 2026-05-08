@@ -25,5 +25,6 @@ public class RecommendationResponseDTO {
         private Integer estimatedMinutes;
         private String category;
         private String latestStatus;
+        private boolean loggedToday;
     }
 }

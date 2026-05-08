@@ -34,6 +34,7 @@ export interface RecommendedProblem {
   estimatedMinutes: number;
   category: 'NEW' | 'REVIEW' | 'SPACED_REPETITION' | '';
   latestStatus?: string;
+  loggedToday: boolean;
 }
 
 export interface DailyRecommendation {

@@ -29,7 +29,6 @@ export default function Dashboard() {
   const [showFilters, setShowFilters] = useState(false)
   const [modalProblem, setModalProblem] = useState<RecommendedProblem | null>(null)
   const [refreshKey, setRefreshKey] = useState(0)
-  const [loggedIds, setLoggedIds] = useState<Set<number>>(new Set())
 
   useEffect(() => {
     problemsApi.getPatterns().then(setAvailablePatterns).catch(() => {})
@@ -53,7 +52,6 @@ export default function Dashboard() {
   const regenerate = async () => {
     setLoading(true)
     setError('')
-    setLoggedIds(new Set())
     try {
       const data = await recommendationsApi.generate({
         forceRegenerate: true,
@@ -205,7 +203,7 @@ export default function Dashboard() {
                 key={p.id}
                 problem={p}
                 index={i + 1}
-                justLogged={loggedIds.has(p.id)}
+                justLogged={p.loggedToday}
                 onLog={() => setModalProblem(p)}
               />
             ))}
@@ -224,16 +222,7 @@ export default function Dashboard() {
         <AttemptModal
           problem={modalProblem}
           onClose={() => setModalProblem(null)}
-          onSaved={(status) => {
-            const id = modalProblem!.id
-            setLoggedIds(prev => new Set([...prev, id]))
-            setRec(prev => prev ? {
-              ...prev,
-              problems: prev.problems.map(p =>
-                p.id === id ? { ...p, latestStatus: status } : p
-              ),
-            } : null)
-          }}
+          onSaved={() => setRefreshKey(k => k + 1)}
         />
       )}
     </div>
