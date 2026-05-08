@@ -28,11 +28,11 @@ public class RecommendationController {
     public RecommendationResponseDTO getToday(
             @RequestParam(defaultValue = "90") int targetMinutes,
             @RequestParam(required = false) String difficulty,
-            @RequestParam(required = false) String pattern,
+            @RequestParam(required = false) List<String> patterns,
             @RequestParam(required = false) String company,
             @RequestParam(required = false) List<String> categories) {
         return recommendationService.getOrGenerate(
-                LocalDate.now(), targetMinutes, false, difficulty, pattern, company, categories);
+                LocalDate.now(), targetMinutes, false, difficulty, patterns, company, categories);
     }
 
     @PostMapping("/generate")
@@ -48,6 +48,6 @@ public class RecommendationController {
         return recommendationService.getOrGenerate(
                 date, targetMinutes,
                 Boolean.TRUE.equals(req.getForceRegenerate()),
-                req.getDifficulty(), req.getPattern(), req.getCompany(), req.getCategories());
+                req.getDifficulty(), req.getPatterns(), req.getCompany(), req.getCategories());
     }
 }

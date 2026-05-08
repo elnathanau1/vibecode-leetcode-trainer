@@ -29,7 +29,7 @@ export const recommendationsApi = {
   getToday: (params?: {
     targetMinutes?: number;
     difficulty?: string;
-    pattern?: string;
+    patterns?: string[];
     company?: string;
     categories?: string[];
   }) => api.get<DailyRecommendation>('/recommendations/today', { params }).then(r => r.data),
@@ -38,7 +38,7 @@ export const recommendationsApi = {
     targetMinutes?: number;
     forceRegenerate?: boolean;
     difficulty?: string;
-    pattern?: string;
+    patterns?: string[];
     company?: string;
     categories?: string[];
   }) => api.post<DailyRecommendation>('/recommendations/generate', data).then(r => r.data),

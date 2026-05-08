@@ -11,7 +11,7 @@ public class RecommendationRequest {
     private Integer targetMinutes = 90;
     private Boolean forceRegenerate = false;
     private String difficulty;
-    private String pattern;
+    private List<String> patterns;
     private String company;
     /** Which categories to include: NEW, REVIEW, SPACED_REPETITION. Empty/null means all. */
     private List<String> categories;

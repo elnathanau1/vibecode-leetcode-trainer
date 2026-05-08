@@ -23,15 +23,15 @@ export default function Dashboard() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   const [targetMinutes, setTargetMinutes] = useState(90)
-  const [pattern, setPattern] = useState('')
+  const [selectedPatterns, setSelectedPatterns] = useState<string[]>([])
   const [categories, setCategories] = useState<string[]>(ALL_CATEGORIES)
-  const [patterns, setPatterns] = useState<string[]>([])
+  const [availablePatterns, setAvailablePatterns] = useState<string[]>([])
   const [showFilters, setShowFilters] = useState(false)
   const [modalProblem, setModalProblem] = useState<RecommendedProblem | null>(null)
   const [refreshKey, setRefreshKey] = useState(0)
 
   useEffect(() => {
-    problemsApi.getPatterns().then(setPatterns).catch(() => {})
+    problemsApi.getPatterns().then(setAvailablePatterns).catch(() => {})
   }, [])
 
   const load = useCallback(async () => {
@@ -56,7 +56,7 @@ export default function Dashboard() {
       const data = await recommendationsApi.generate({
         forceRegenerate: true,
         targetMinutes,
-        pattern: pattern || undefined,
+        patterns: selectedPatterns.length > 0 ? selectedPatterns : undefined,
         categories: categories.length === ALL_CATEGORIES.length ? undefined : categories,
       })
       setRec(data)
@@ -73,13 +73,19 @@ export default function Dashboard() {
     )
   }
 
+  const togglePattern = (p: string) => {
+    setSelectedPatterns(prev =>
+      prev.includes(p) ? prev.filter(x => x !== p) : [...prev, p]
+    )
+  }
+
   const today = new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })
 
   const sessionComplete = rec?.problems.every(p =>
     ['SOLVED', 'FAILED', 'REVIEW'].includes(p.latestStatus ?? '')
   )
 
-  const filtersActive = pattern || categories.length !== ALL_CATEGORIES.length
+  const filtersActive = selectedPatterns.length > 0 || categories.length !== ALL_CATEGORIES.length
 
   return (
     <div className="page">
@@ -112,50 +118,48 @@ export default function Dashboard() {
       </div>
 
       {showFilters && (
-        <div className="card" style={{ marginBottom: 16, display: 'flex', flexDirection: 'column', gap: 14 }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 16, flexWrap: 'wrap' }}>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+        <div className="card" style={{ marginBottom: 16, display: 'flex', flexDirection: 'column', gap: 16 }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
               <label className="text-muted text-sm" style={{ fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.5px' }}>
-                Problem Type
+                Problem Types {selectedPatterns.length > 0 && <span style={{ color: 'var(--accent)' }}>({selectedPatterns.length} selected)</span>}
               </label>
-              <select
-                value={pattern}
-                onChange={e => setPattern(e.target.value)}
-                style={{ minWidth: 200 }}
-              >
-                <option value="">All Types</option>
-                {patterns.map(p => <option key={p} value={p}>{p}</option>)}
-              </select>
+              {selectedPatterns.length > 0 && (
+                <button className="btn-secondary btn-sm" onClick={() => setSelectedPatterns([])}>Clear</button>
+              )}
             </div>
-
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-              <label className="text-muted text-sm" style={{ fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.5px' }}>
-                Include
-              </label>
-              <div className="flex gap-8" style={{ alignItems: 'center' }}>
-                {ALL_CATEGORIES.map(cat => (
-                  <label key={cat} style={{ display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer', fontSize: 13 }}>
-                    <input
-                      type="checkbox"
-                      checked={categories.includes(cat)}
-                      onChange={() => toggleCategory(cat)}
-                    />
-                    {CATEGORY_LABELS[cat]}
-                  </label>
-                ))}
-              </div>
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px 16px' }}>
+              {availablePatterns.map(p => (
+                <label key={p} style={{ display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer', fontSize: 13, whiteSpace: 'nowrap' }}>
+                  <input
+                    type="checkbox"
+                    checked={selectedPatterns.includes(p)}
+                    onChange={() => togglePattern(p)}
+                  />
+                  {p}
+                </label>
+              ))}
             </div>
-
-            {filtersActive && (
-              <button
-                className="btn-secondary btn-sm"
-                style={{ alignSelf: 'flex-end' }}
-                onClick={() => { setPattern(''); setCategories(ALL_CATEGORIES) }}
-              >
-                Clear
-              </button>
-            )}
           </div>
+
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+            <label className="text-muted text-sm" style={{ fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+              Include
+            </label>
+            <div className="flex gap-8" style={{ alignItems: 'center' }}>
+              {ALL_CATEGORIES.map(cat => (
+                <label key={cat} style={{ display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer', fontSize: 13 }}>
+                  <input
+                    type="checkbox"
+                    checked={categories.includes(cat)}
+                    onChange={() => toggleCategory(cat)}
+                  />
+                  {CATEGORY_LABELS[cat]}
+                </label>
+              ))}
+            </div>
+          </div>
+
           <div className="text-muted text-sm">
             Filters apply when you click <strong>New Session</strong>.
           </div>

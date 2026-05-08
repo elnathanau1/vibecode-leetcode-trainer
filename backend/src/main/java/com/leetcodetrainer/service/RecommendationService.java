@@ -28,7 +28,7 @@ public class RecommendationService {
     );
 
     public RecommendationResponseDTO getOrGenerate(LocalDate date, int targetMinutes, boolean forceRegenerate,
-                                                    String difficulty, String pattern, String company,
+                                                    String difficulty, List<String> patterns, String company,
                                                     List<String> categories) {
         if (!forceRegenerate) {
             Optional<DailyRecommendation> existing = recommendationRepository.findByRecommendationDate(date);
@@ -40,11 +40,11 @@ public class RecommendationService {
                     .ifPresent(r -> recommendationRepository.deleteById(r.getId()));
         }
 
-        return generate(date, targetMinutes, difficulty, pattern, company, categories);
+        return generate(date, targetMinutes, difficulty, patterns, company, categories);
     }
 
     private RecommendationResponseDTO generate(LocalDate date, int targetMinutes,
-                                                String filterDifficulty, String filterPattern, String filterCompany,
+                                                String filterDifficulty, List<String> filterPatterns, String filterCompany,
                                                 List<String> filterCategories) {
         boolean includeReview = filterCategories == null || filterCategories.isEmpty()
                 || filterCategories.stream().anyMatch(c -> c.equalsIgnoreCase("REVIEW"));
@@ -56,13 +56,13 @@ public class RecommendationService {
         List<Long> attemptedIds = attemptRepository.findDistinctProblemIds();
 
         List<Problem> reviewProblems = includeReview
-                ? getReviewProblems(filterDifficulty, filterPattern, filterCompany)
+                ? getReviewProblems(filterDifficulty, filterPatterns, filterCompany)
                 : Collections.emptyList();
         List<Problem> spacedRepProblems = includeSpaced
-                ? getSpacedRepetitionProblems(filterDifficulty, filterPattern, filterCompany)
+                ? getSpacedRepetitionProblems(filterDifficulty, filterPatterns, filterCompany)
                 : Collections.emptyList();
         List<Problem> newProblems = includeNew
-                ? getNewProblems(attemptedIds, filterDifficulty, filterPattern, filterCompany)
+                ? getNewProblems(attemptedIds, filterDifficulty, filterPatterns, filterCompany)
                 : Collections.emptyList();
 
         List<ProblemWithCategory> selected = new ArrayList<>();
@@ -115,27 +115,27 @@ public class RecommendationService {
         return buildResponse(rec, selected);
     }
 
-    private List<Problem> getReviewProblems(String difficulty, String pattern, String company) {
+    private List<Problem> getReviewProblems(String difficulty, List<String> patterns, String company) {
         List<Attempt> reviewAttempts = attemptRepository.findLatestAttemptsByStatus("REVIEW");
         List<Problem> problems = reviewAttempts.stream()
                 .map(Attempt::getProblem)
-                .filter(p -> matchesFilters(p, difficulty, pattern, company))
+                .filter(p -> matchesFilters(p, difficulty, patterns, company))
                 .collect(Collectors.toList());
         Collections.shuffle(problems);
         return problems;
     }
 
-    private List<Problem> getSpacedRepetitionProblems(String difficulty, String pattern, String company) {
+    private List<Problem> getSpacedRepetitionProblems(String difficulty, List<String> patterns, String company) {
         List<Attempt> solvedAttempts = attemptRepository.findLatestAttemptsByStatus("SOLVED");
         List<Problem> problems = solvedAttempts.stream()
                 .map(Attempt::getProblem)
-                .filter(p -> matchesFilters(p, difficulty, pattern, company))
+                .filter(p -> matchesFilters(p, difficulty, patterns, company))
                 .collect(Collectors.toList());
         Collections.shuffle(problems);
         return problems;
     }
 
-    private List<Problem> getNewProblems(List<Long> attemptedIds, String difficulty, String pattern, String company) {
+    private List<Problem> getNewProblems(List<Long> attemptedIds, String difficulty, List<String> patterns, String company) {
         List<Long> excludeIds = attemptedIds.isEmpty() ? List.of(-1L) : attemptedIds;
         List<Problem> problems;
         if (difficulty != null && !difficulty.isBlank()) {
@@ -144,7 +144,7 @@ public class RecommendationService {
             problems = problemRepository.findByIdNotIn(excludeIds);
         }
         List<Problem> filtered = problems.stream()
-                .filter(p -> matchesFilters(p, null, pattern, company))
+                .filter(p -> matchesFilters(p, null, patterns, company))
                 .collect(Collectors.toList());
 
         // Shuffle for variety, but keep difficulty grouping
@@ -162,11 +162,11 @@ public class RecommendationService {
         return result;
     }
 
-    private boolean matchesFilters(Problem p, String difficulty, String pattern, String company) {
+    private boolean matchesFilters(Problem p, String difficulty, List<String> patterns, String company) {
         if (difficulty != null && !difficulty.isBlank() &&
                 !difficulty.equalsIgnoreCase(p.getDifficulty())) return false;
-        if (pattern != null && !pattern.isBlank() &&
-                p.getPatterns().stream().noneMatch(pt -> pt.equalsIgnoreCase(pattern))) return false;
+        if (patterns != null && !patterns.isEmpty() &&
+                p.getPatterns().stream().noneMatch(pt -> patterns.stream().anyMatch(pt::equalsIgnoreCase))) return false;
         if (company != null && !company.isBlank() &&
                 p.getCompanies().stream().noneMatch(c -> c.equalsIgnoreCase(company))) return false;
         return true;
