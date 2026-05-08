@@ -28,7 +28,8 @@ public class RecommendationService {
     );
 
     public RecommendationResponseDTO getOrGenerate(LocalDate date, int targetMinutes, boolean forceRegenerate,
-                                                    String difficulty, String pattern, String company) {
+                                                    String difficulty, String pattern, String company,
+                                                    List<String> categories) {
         if (!forceRegenerate) {
             Optional<DailyRecommendation> existing = recommendationRepository.findByRecommendationDate(date);
             if (existing.isPresent()) {
@@ -39,21 +40,34 @@ public class RecommendationService {
                     .ifPresent(r -> recommendationRepository.deleteById(r.getId()));
         }
 
-        return generate(date, targetMinutes, difficulty, pattern, company);
+        return generate(date, targetMinutes, difficulty, pattern, company, categories);
     }
 
     private RecommendationResponseDTO generate(LocalDate date, int targetMinutes,
-                                                String filterDifficulty, String filterPattern, String filterCompany) {
+                                                String filterDifficulty, String filterPattern, String filterCompany,
+                                                List<String> filterCategories) {
+        boolean includeReview = filterCategories == null || filterCategories.isEmpty()
+                || filterCategories.stream().anyMatch(c -> c.equalsIgnoreCase("REVIEW"));
+        boolean includeSpaced = filterCategories == null || filterCategories.isEmpty()
+                || filterCategories.stream().anyMatch(c -> c.equalsIgnoreCase("SPACED_REPETITION"));
+        boolean includeNew = filterCategories == null || filterCategories.isEmpty()
+                || filterCategories.stream().anyMatch(c -> c.equalsIgnoreCase("NEW"));
+
         List<Long> attemptedIds = attemptRepository.findDistinctProblemIds();
 
-        List<Problem> reviewProblems = getReviewProblems(filterDifficulty, filterPattern, filterCompany);
-        List<Problem> spacedRepProblems = getSpacedRepetitionProblems(filterDifficulty, filterPattern, filterCompany);
-        List<Problem> newProblems = getNewProblems(attemptedIds, filterDifficulty, filterPattern, filterCompany);
+        List<Problem> reviewProblems = includeReview
+                ? getReviewProblems(filterDifficulty, filterPattern, filterCompany)
+                : Collections.emptyList();
+        List<Problem> spacedRepProblems = includeSpaced
+                ? getSpacedRepetitionProblems(filterDifficulty, filterPattern, filterCompany)
+                : Collections.emptyList();
+        List<Problem> newProblems = includeNew
+                ? getNewProblems(attemptedIds, filterDifficulty, filterPattern, filterCompany)
+                : Collections.emptyList();
 
         List<ProblemWithCategory> selected = new ArrayList<>();
         int totalMinutes = 0;
         int reviewBudget = (int) (targetMinutes * 0.25);
-        int spacedBudget = (int) (targetMinutes * 0.25);
 
         // Add up to 2 review problems within 25% budget
         for (Problem p : reviewProblems) {
@@ -103,18 +117,22 @@ public class RecommendationService {
 
     private List<Problem> getReviewProblems(String difficulty, String pattern, String company) {
         List<Attempt> reviewAttempts = attemptRepository.findLatestAttemptsByStatus("REVIEW");
-        return reviewAttempts.stream()
+        List<Problem> problems = reviewAttempts.stream()
                 .map(Attempt::getProblem)
                 .filter(p -> matchesFilters(p, difficulty, pattern, company))
                 .collect(Collectors.toList());
+        Collections.shuffle(problems);
+        return problems;
     }
 
     private List<Problem> getSpacedRepetitionProblems(String difficulty, String pattern, String company) {
         List<Attempt> solvedAttempts = attemptRepository.findLatestAttemptsByStatus("SOLVED");
-        return solvedAttempts.stream()
+        List<Problem> problems = solvedAttempts.stream()
                 .map(Attempt::getProblem)
                 .filter(p -> matchesFilters(p, difficulty, pattern, company))
                 .collect(Collectors.toList());
+        Collections.shuffle(problems);
+        return problems;
     }
 
     private List<Problem> getNewProblems(List<Long> attemptedIds, String difficulty, String pattern, String company) {

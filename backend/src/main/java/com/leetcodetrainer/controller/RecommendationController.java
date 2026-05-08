@@ -9,6 +9,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDate;
+import java.util.List;
 
 @RestController
 @RequestMapping("/api/recommendations")
@@ -22,15 +23,16 @@ public class RecommendationController {
     @Operation(
         summary = "Get today's recommendations",
         description = "Returns today's recommended problems. Generates them if they don't exist yet. " +
-                      "Optional filters: targetMinutes (default 90), difficulty, pattern, company"
+                      "Optional filters: targetMinutes, difficulty, pattern, company, categories (NEW/REVIEW/SPACED_REPETITION)"
     )
     public RecommendationResponseDTO getToday(
             @RequestParam(defaultValue = "90") int targetMinutes,
             @RequestParam(required = false) String difficulty,
             @RequestParam(required = false) String pattern,
-            @RequestParam(required = false) String company) {
+            @RequestParam(required = false) String company,
+            @RequestParam(required = false) List<String> categories) {
         return recommendationService.getOrGenerate(
-                LocalDate.now(), targetMinutes, false, difficulty, pattern, company);
+                LocalDate.now(), targetMinutes, false, difficulty, pattern, company, categories);
     }
 
     @PostMapping("/generate")
@@ -38,8 +40,7 @@ public class RecommendationController {
         summary = "Generate recommendations",
         description = "Generate recommendations for a specific date with custom parameters. " +
                       "Set forceRegenerate=true to replace existing recommendations for that date. " +
-                      "Supports filtering by difficulty (EASY/MEDIUM/HARD), pattern, or company. " +
-                      "targetMinutes controls total session length (default: 90)."
+                      "Supports filtering by difficulty, pattern, company, and categories (NEW/REVIEW/SPACED_REPETITION)."
     )
     public RecommendationResponseDTO generate(@RequestBody RecommendationRequest req) {
         LocalDate date = req.getDate() != null ? req.getDate() : LocalDate.now();
@@ -47,6 +48,6 @@ public class RecommendationController {
         return recommendationService.getOrGenerate(
                 date, targetMinutes,
                 Boolean.TRUE.equals(req.getForceRegenerate()),
-                req.getDifficulty(), req.getPattern(), req.getCompany());
+                req.getDifficulty(), req.getPattern(), req.getCompany(), req.getCategories());
     }
 }

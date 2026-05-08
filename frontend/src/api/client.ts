@@ -26,8 +26,13 @@ export const attemptsApi = {
 };
 
 export const recommendationsApi = {
-  getToday: (params?: { targetMinutes?: number; difficulty?: string; pattern?: string; company?: string }) =>
-    api.get<DailyRecommendation>('/recommendations/today', { params }).then(r => r.data),
+  getToday: (params?: {
+    targetMinutes?: number;
+    difficulty?: string;
+    pattern?: string;
+    company?: string;
+    categories?: string[];
+  }) => api.get<DailyRecommendation>('/recommendations/today', { params }).then(r => r.data),
   generate: (data: {
     date?: string;
     targetMinutes?: number;
@@ -35,6 +40,7 @@ export const recommendationsApi = {
     difficulty?: string;
     pattern?: string;
     company?: string;
+    categories?: string[];
   }) => api.post<DailyRecommendation>('/recommendations/generate', data).then(r => r.data),
 };
 

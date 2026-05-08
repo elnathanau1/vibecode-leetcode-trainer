@@ -3,6 +3,7 @@ package com.leetcodetrainer.dto;
 import lombok.Data;
 
 import java.time.LocalDate;
+import java.util.List;
 
 @Data
 public class RecommendationRequest {
@@ -12,4 +13,6 @@ public class RecommendationRequest {
     private String difficulty;
     private String pattern;
     private String company;
+    /** Which categories to include: NEW, REVIEW, SPACED_REPETITION. Empty/null means all. */
+    private List<String> categories;
 }

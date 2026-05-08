@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react'
-import { recommendationsApi } from '../api/client'
+import { problemsApi, recommendationsApi } from '../api/client'
 import type { DailyRecommendation, RecommendedProblem } from '../types'
 import DifficultyBadge from '../components/DifficultyBadge'
 import AttemptModal from '../components/AttemptModal'
@@ -9,6 +9,8 @@ const CATEGORY_LABELS: Record<string, string> = {
   REVIEW: '🔄 Review',
   SPACED_REPETITION: '🧠 Spaced Rep',
 }
+
+const ALL_CATEGORIES = ['NEW', 'REVIEW', 'SPACED_REPETITION']
 
 const STATUS_BADGE: Record<string, string> = {
   SOLVED: 'badge-solved',
@@ -21,14 +23,22 @@ export default function Dashboard() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   const [targetMinutes, setTargetMinutes] = useState(90)
+  const [pattern, setPattern] = useState('')
+  const [categories, setCategories] = useState<string[]>(ALL_CATEGORIES)
+  const [patterns, setPatterns] = useState<string[]>([])
+  const [showFilters, setShowFilters] = useState(false)
   const [modalProblem, setModalProblem] = useState<RecommendedProblem | null>(null)
   const [refreshKey, setRefreshKey] = useState(0)
 
-  const load = useCallback(async (target?: number) => {
+  useEffect(() => {
+    problemsApi.getPatterns().then(setPatterns).catch(() => {})
+  }, [])
+
+  const load = useCallback(async () => {
     setLoading(true)
     setError('')
     try {
-      const data = await recommendationsApi.getToday({ targetMinutes: target ?? targetMinutes })
+      const data = await recommendationsApi.getToday({ targetMinutes })
       setRec(data)
     } catch {
       setError('Could not load recommendations. Make sure the backend is running.')
@@ -43,7 +53,12 @@ export default function Dashboard() {
     setLoading(true)
     setError('')
     try {
-      const data = await recommendationsApi.generate({ forceRegenerate: true, targetMinutes })
+      const data = await recommendationsApi.generate({
+        forceRegenerate: true,
+        targetMinutes,
+        pattern: pattern || undefined,
+        categories: categories.length === ALL_CATEGORIES.length ? undefined : categories,
+      })
       setRec(data)
     } catch {
       setError('Failed to regenerate.')
@@ -52,11 +67,19 @@ export default function Dashboard() {
     }
   }
 
+  const toggleCategory = (cat: string) => {
+    setCategories(prev =>
+      prev.includes(cat) ? prev.filter(c => c !== cat) : [...prev, cat]
+    )
+  }
+
   const today = new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })
 
   const sessionComplete = rec?.problems.every(p =>
     ['SOLVED', 'FAILED', 'REVIEW'].includes(p.latestStatus ?? '')
   )
+
+  const filtersActive = pattern || categories.length !== ALL_CATEGORIES.length
 
   return (
     <div className="page">
@@ -75,11 +98,69 @@ export default function Dashboard() {
               <option key={m} value={m}>{m} min</option>
             ))}
           </select>
+          <button
+            className="btn-secondary"
+            onClick={() => setShowFilters(f => !f)}
+            style={{ position: 'relative' }}
+          >
+            🎛 Filters{filtersActive ? ' ●' : ''}
+          </button>
           <button className="btn-secondary" onClick={regenerate} disabled={loading}>
             🔄 New Session
           </button>
         </div>
       </div>
+
+      {showFilters && (
+        <div className="card" style={{ marginBottom: 16, display: 'flex', flexDirection: 'column', gap: 14 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 16, flexWrap: 'wrap' }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+              <label className="text-muted text-sm" style={{ fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                Problem Type
+              </label>
+              <select
+                value={pattern}
+                onChange={e => setPattern(e.target.value)}
+                style={{ minWidth: 200 }}
+              >
+                <option value="">All Types</option>
+                {patterns.map(p => <option key={p} value={p}>{p}</option>)}
+              </select>
+            </div>
+
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+              <label className="text-muted text-sm" style={{ fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                Include
+              </label>
+              <div className="flex gap-8" style={{ alignItems: 'center' }}>
+                {ALL_CATEGORIES.map(cat => (
+                  <label key={cat} style={{ display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer', fontSize: 13 }}>
+                    <input
+                      type="checkbox"
+                      checked={categories.includes(cat)}
+                      onChange={() => toggleCategory(cat)}
+                    />
+                    {CATEGORY_LABELS[cat]}
+                  </label>
+                ))}
+              </div>
+            </div>
+
+            {filtersActive && (
+              <button
+                className="btn-secondary btn-sm"
+                style={{ alignSelf: 'flex-end' }}
+                onClick={() => { setPattern(''); setCategories(ALL_CATEGORIES) }}
+              >
+                Clear
+              </button>
+            )}
+          </div>
+          <div className="text-muted text-sm">
+            Filters apply when you click <strong>New Session</strong>.
+          </div>
+        </div>
+      )}
 
       {loading && <div className="spinner" />}
 
@@ -126,7 +207,7 @@ export default function Dashboard() {
           {rec.problems.length === 0 && (
             <div className="empty-state">
               <div className="icon">🎉</div>
-              <div>No problems found. Try adjusting the target time or adding more problems.</div>
+              <div>No problems found. Try adjusting the target time or filters.</div>
             </div>
           )}
         </>
